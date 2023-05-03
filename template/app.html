@@ -135,6 +135,11 @@
                     var(--border-size) var(--border-size));
         }
 
+        #bgimage {
+            image-rendering: pixelated;
+            transform-origin: 0 0;
+        }
+
     </style>
 </head>
 
@@ -172,7 +177,8 @@
                 <li class="divider" data-content="IMAGES"></li>
                 <div style="overflow-y:auto; flex:1">
                     <li class="menu-item" v-for="(image, imageIndex) in imageList">
-                        <a :class="{active: i==imageIndex}" href="#" @click="i=imageIndex; showBoxIndex=-1" :title="image.name">
+                        <a :class="{active: i==imageIndex}" href="#" @pointerdown   ="i=imageIndex; showBoxIndex=-1" :title="image.name"
+                        style="-webkit-user-drag: none;">
                             {{ image.name }}</a>
                     </li>
                 </div>
@@ -182,10 +188,11 @@
         <!-- CENTER -->
         <div class="center-content">
             <div id="panzoom-anchor">
-                <img :src="imageList[i].file" @pointerover="selectedBoxIndex = -1" @pointerdown="showBoxIndex=-1">
+                <img id="bgimage" :src="imageList[i].file" @pointerover="selectedBoxIndex = -1" @pointerdown="showBoxIndex=-1"
+                :style="{transform: 'scale(' + imgScale + ')'}">
                 <template v-for="(bbox, boxIndex) in imageList[i].bbox">
                     <div v-if="tagVisible(bbox.tags)" class="bbox"
-                        :style="{'border-color' : rgb2hex(classColors[bbox.classId],showBoxIndex==boxIndex?1.0:0.7), 'border-style': (selectedBoxIndex == boxIndex || showBoxIndex == boxIndex  ) ? 'solid' : null, left:bbox.x1+'px', top:bbox.y1+'px', width:(bbox.x2-bbox.x1)+'px', height:(bbox.y2-bbox.y1)+'px', 'font-size':bboxSize}">
+                        :style="{'border-color' : rgb2hex(classColors[bbox.classId],showBoxIndex==boxIndex?1.0:0.7), 'border-style': (selectedBoxIndex == boxIndex || showBoxIndex == boxIndex  ) ? 'solid' : null, left:imgScale*bbox.x1+'px', top:imgScale*bbox.y1+'px', width:imgScale*(bbox.x2-bbox.x1)+'px', height:imgScale*(bbox.y2-bbox.y1)+'px', 'font-size':bboxSize}">
                         <div :style="{'background-color': rgb2hex(classColors[bbox.classId], showBoxIndex==boxIndex?1.0:0.7)}"
                             style="display: inline-block;" @pointerover="selectedBoxIndex = boxIndex"
                             @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex">
@@ -204,9 +211,10 @@
                     <span>Class:</span><span>{{ bbox.classId }}</span>&nbsp;
                     <span>{{ classes[bbox.classId] }}</span>
                     <div class="divider"></div>
-                    <span>TLxy: </span><span>{{ bbox.x1 }}, {{ bbox.y1 }}</span><br>
-                    <span>BRxy: </span><span>{{ bbox.x2 }}, {{ bbox.y2 }}</span><br>
-                    <span>Center: </span><span>{{ (bbox.x2+bbox.x1)/2 }}, {{ (bbox.y2+bbox.x1)/2 }}</span>
+                    <span>TLxy: </span><span>{{ bbox.x1.toFixed(1) }}, {{ bbox.y1.toFixed(1) }}</span><br>
+                    <span>BRxy: </span><span>{{ bbox.x2.toFixed(1) }}, {{ bbox.y2.toFixed(1) }}</span><br>
+                    <span>Center: </span><span>{{ ((bbox.x2+bbox.x1)/2).toFixed(1) }}, {{ ((bbox.y2+bbox.x1)/2).toFixed(1) }}</span><br>
+                    <span>WH: </span><span>{{ ((bbox.x2-bbox.x1)).toFixed(1) }}, {{ ((bbox.y2-bbox.x1)).toFixed(1) }}</span>
                     <div class="divider"></div>
                     <span>Tags:</span>
                     <span v-for="tag in imageList[i].bbox[showBoxIndex].tags" class="chip">{{ tag }}</span>
@@ -237,6 +245,7 @@
                         selectedBoxIndex: -1, // bbox index
                         showBoxIndex: -1, // bbox index
                         zoom: 1,
+                        imgScale: 3,
                         allTags: [],
                         tagsShowMode: 0, // 0 any 1 all
                         tagsShow: new Set(),
@@ -459,18 +468,18 @@
 
             // find all tags
             let rebuildTags = function() {
-            let tagSet = new Set();
-            for (let image of v.imageList) {
-                console.log(image)
-                for (let bbox of image.bbox) {
-                    for (let tag of bbox.tags) {
-                        tagSet.add(tag);
+                let tagSet = new Set();
+                for (let image of v.imageList) {
+                    console.log(image)
+                    for (let bbox of image.bbox) {
+                        for (let tag of bbox.tags) {
+                            tagSet.add(tag);
+                        }
                     }
                 }
-            }
-            console.log(tagSet);
-            v.allTags = Array.from(tagSet);
-            v.tagsShow = tagSet;
+                console.log(tagSet);
+                v.allTags = Array.from(tagSet);
+                v.tagsShow = tagSet;
             };
             rebuildTags();
             window.rebuildTags = rebuildTags;

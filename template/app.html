@@ -1,0 +1,491 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>BBox</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <!-- spectre.css -->
+    <link rel="stylesheet" href="spectre.min.css">
+    <link rel="stylesheet" href="spectre-icons.min.css">
+
+    <script src="jquery.min.js"></script>
+    <script src="tinycolor.min.js"></script>
+    <script src='panzoom.min.js'></script>
+    <script src="vue.global.prod.js"></script>
+
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        header,
+        footer {
+            flex: 0 0 auto;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .left-sidebar {
+            flex: 0 0 200px;
+            padding: 0px;
+            background-color: #fff;
+        }
+
+        .left-sidebar .menu {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .right-sidebar {
+            flex: 0 0 200px;
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        .center-content {
+            flex: 1;
+            overflow: hidden;
+            background-color: #eee;
+        }
+
+        header,
+        footer {
+            /* border: 1px solid black; */
+            padding: 10px;
+        }
+
+        #panzoom-anchor {
+            width: fit-content;
+            height: fit-content;
+            position: relative;
+        }
+
+        .bbox {
+            user-select: none;
+            position: absolute;
+            border-width: .3em;
+            border-style: dotted;
+
+        }
+
+        .chip.clickable {
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .chip.show-active {
+            background-color: #bbf7d3;
+        }
+
+        .chip.hide-active {
+            background-color: #f7bbbb;
+        }
+
+        .tags-holder {
+            max-height: 90px;
+            overflow-y: auto;
+        }
+
+        .bbox>.border-click {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            z-index: 100;
+
+            --border-size: 0.6em;
+            clip-path: polygon(evenodd,
+                    0 0,
+                    /* top - left */
+                    100% 0,
+                    /* top - right */
+                    100% 100%,
+                    /* bottom - right */
+                    0% 100%,
+                    /* bottom - left */
+                    0 0,
+                    /* and top - left again */
+                    /* do the same with inner rect */
+                    var(--border-size) var(--border-size),
+                    calc(100% - var(--border-size)) var(--border-size),
+                    calc(100% - var(--border-size)) calc(100% - var(--border-size)),
+                    var(--border-size) calc(100% - var(--border-size)),
+                    var(--border-size) var(--border-size));
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <header class="navbar">
+        <section class="navbar-section">
+            <h3>BBox Viewer</h3>
+        </section>
+    </header>
+    <div class="content-wrapper" id="app">
+        <!-- LEFT -->
+        <div class="left-sidebar">
+            <ul class="menu">
+                <h6>Show if has tags:</h6>
+                <div class="btn-group">
+                    <button class="btn btn-sm" :class="{active: tagsShowMode==0}" @click="tagsShowMode=0">Any</button>
+                    <button class="btn btn-sm" :class="{active: tagsShowMode==1}" @click="tagsShowMode=1">All</button>
+                </div>
+                <div class="tags-holder">
+                    <span v-for="tag in allTags" class="chip clickable" :class="{'show-active': tagsShow.has(tag)}"
+                        @click="tagsShowClicked(tag)">{{ tag }}</span>
+                </div>
+                <div class="divider"></div>
+                <h6>Hide if has tags:</h6>
+                <div class="btn-group">
+                    <button class="btn btn-sm" :class="{active: tagsHideMode==0}" @click="tagsHideMode=0">Any</button>
+                    <button class="btn btn-sm" :class="{active: tagsHideMode==1}" @click="tagsHideMode=1">All</button>
+                </div>
+                <div class="tags-holder">
+                    <span v-for="tag in allTags" class="chip clickable" :class="{'hide-active': tagsHide.has(tag)}"
+                        @click="tagHideClicked(tag)">{{ tag }}</span>
+                </div>
+
+                <li class="divider" data-content="IMAGES"></li>
+                <div style="overflow-y:auto; flex:1">
+                    <li class="menu-item" v-for="(image, imageIndex) in imageList">
+                        <a :class="{active: i==imageIndex}" href="#" @click="i=imageIndex; showBoxIndex=-1">{{
+                            image.file }}</a>
+                    </li>
+                </div>
+            </ul>
+
+        </div>
+        <!-- CENTER -->
+        <div class="center-content">
+            <div id="panzoom-anchor">
+                <img :src="imageList[i].file" @pointerover="selectedBoxIndex = -1" @pointerdown="showBoxIndex=-1">
+                <template v-for="(bbox, boxIndex) in imageList[i].bbox">
+                    <div v-if="tagVisible(bbox.tags)" class="bbox"
+                        :style="{'border-color' : rgb2hex(classColors[bbox.classId],showBoxIndex==boxIndex?1.0:0.7), 'border-style': (selectedBoxIndex == boxIndex || showBoxIndex == boxIndex  ) ? 'solid' : null, left:bbox.x1+'px', top:bbox.y1+'px', width:(bbox.x2-bbox.x1)+'px', height:(bbox.y2-bbox.y1)+'px', 'font-size':bboxSize}">
+                        <div :style="{'background-color': rgb2hex(classColors[bbox.classId], showBoxIndex==boxIndex?1.0:0.7)}"
+                            style="display: inline-block;" @pointerover="selectedBoxIndex = boxIndex"
+                            @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex">
+                            {{ bbox.classId }} {{ classes[bbox.classId] }}
+                        </div>
+                        <div class="border-click" @pointerover="selectedBoxIndex = boxIndex"
+                            @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        <!-- RIGHT -->
+        <div class="right-sidebar">
+            <div v-if="showBoxIndex >= 0 && showBoxIndex < imageList[i].bbox.length">
+                <template v-for="bbox in [imageList[i].bbox[showBoxIndex]]">
+                    <span>Class:</span><span>{{ bbox.classId }}</span>&nbsp;
+                    <span>{{ classes[bbox.classId] }}</span>
+                    <div class="divider"></div>
+                    <span>TLxy: </span><span>{{ bbox.x1 }}, {{ bbox.y1 }}</span><br>
+                    <span>BRxy: </span><span>{{ bbox.x2 }}, {{ bbox.y2 }}</span><br>
+                    <span>Center: </span><span>{{ (bbox.x2+bbox.x1)/2 }}, {{ (bbox.y2+bbox.x1)/2 }}</span>
+                    <div class="divider"></div>
+                    <span>Tags:</span>
+                    <span v-for="tag in imageList[i].bbox[showBoxIndex].tags" class="chip">{{ tag }}</span>
+                    <div class="divider"></div>
+                    <p>{{ imageList[i].bbox[showBoxIndex].info }}</p>
+
+                </template>
+            </div>
+            <div v-else>
+                Nothing selected
+            </div>
+        </div>
+    </div>
+    <footer>biubiu</footer>
+
+    <script>
+
+
+        $(function () {
+            console.log('init');
+
+
+            // ================================== Vue3 ==================================
+            let appConfig = {
+                data() {
+                    return {
+                        i: 0, // image index
+                        selectedBoxIndex: -1, // bbox index
+                        showBoxIndex: -1, // bbox index
+                        zoom: 1,
+                        allTags: [],
+                        tagsShowMode: 0, // 0 any 1 all
+                        tagsShow: new Set(),
+                        tagsHideMode: 0, // 0 any 1 all
+                        tagsHide: new Set(),
+                        imageList: [
+                            {
+                                file: '1.jpg',
+                                bbox: [
+                                    {
+                                        classId: 0,
+                                        tags: ['a', 'b', 'asdfasfdasf', 'sdsddddddd'],
+                                        x1: 1100,
+                                        y1: 300,
+                                        x2: 2800,
+                                        y2: 2300,
+                                        info: 'this is a test bbox',
+                                    },
+                                    {
+                                        classId: 2,
+                                        tags: ['a', 'c'],
+                                        x1: 210,
+                                        y1: 120,
+                                        x2: 600,
+                                        y2: 300,
+                                        info: 'this is a test bbox',
+                                    },
+                                    {
+                                        classId: 1,
+                                        tags: ['wwww', '2333'],
+                                        x1: 1000,
+                                        y1: 0,
+                                        x2: 2600,
+                                        y2: 1000,
+                                        info: 'this is a test bbox',
+                                    },
+                                ],
+                            },
+                            {
+                                file: '1.jpg',
+                                bbox: [
+                                    {
+                                        classId: 0,
+                                        tags: ['a', 'b'],
+                                        x1: 100,
+                                        y1: 200,
+                                        x2: 1000,
+                                        y2: 2000,
+                                        info: 'this is a test bbox',
+                                    },
+                                    {
+                                        classId: 2,
+                                        tags: ['a', 'c'],
+                                        x1: 210,
+                                        y1: 120,
+                                        x2: 600,
+                                        y2: 300,
+                                        info: 'this is a test bbox',
+                                    },
+                                ],
+                            },
+                            {
+                                file: '2.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '31.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '41.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                            {
+                                file: '15.jpg',
+                                bbox: [
+                                ],
+                            },
+                        ],
+                        classes: [
+                            'food',
+                            'dog',
+                            'plane',
+                        ],
+                        classColors: [
+                            [255, 255, 0],
+                            [255, 180, 0],
+                            [0, 255, 0],
+                        ],
+                    };
+                },
+                computed: {
+                    bboxSize() {
+                        return (10 / this.zoom) + 'px';
+                    },
+                },
+                methods: {
+                    rgb2hex(rgb, a) {
+                        let [r, g, b] = rgb;
+                        let color = tinycolor(`rgba (${r},${g},${b},${a})`);
+                        return color.toRgbString()
+                    },
+                    tagVisible(tags) {
+                        // hide first
+                        if (this.tagsHideMode == 0) {
+                            // any
+                            for (let tagHide of this.tagsHide) {
+                                if (tags.indexOf(tagHide) != -1) return false;
+                            }
+                        }
+                        else {
+                            // all
+                            let allFlag = true;
+                            for (let tagHide of this.tagsHide) {
+                                if (tags.indexOf(tagHide) == -1) {
+                                    allFlag = false;
+                                    break;
+                                }
+                            }
+                            if (allFlag) return false;
+                        }
+                        // show criteria
+                        if (this.tagsShowMode == 0) {
+                            // any
+                            for (let tagShow of this.tagsShow) {
+                                if (tags.indexOf(tagShow) != -1) return true;
+                            }
+                        }
+                        else {
+                            // all
+                            let allFlag = true;
+                            for (let tagShow of this.tagsShow) {
+                                if (tags.indexOf(tagShow) == -1) {
+                                    allFlag = false;
+                                    break;
+                                }
+                            }
+                            if (allFlag) return true;
+                        }
+                        return false;
+                    },
+                    tagHideClicked(tag) {
+                        if (this.tagsHide.has(tag)) {
+                            this.tagsHide.delete(tag);
+                        }
+                        else {
+                            this.tagsHide.add(tag);
+                        }
+                    },
+                    tagsShowClicked(tag) {
+                        if (this.tagsShow.has(tag)) {
+                            this.tagsShow.delete(tag);
+                        }
+                        else {
+                            this.tagsShow.add(tag);
+                        }
+                    }
+                },
+
+            };
+
+            let v = Vue.createApp(appConfig).mount('#app');
+
+            // find all tags
+            let tagSet = new Set();
+            for (let image of v.imageList) {
+                console.log(image)
+                for (let bbox of image.bbox) {
+                    for (let tag of bbox.tags) {
+                        tagSet.add(tag);
+                    }
+                }
+            }
+            console.log(tagSet);
+            v.allTags = Array.from(tagSet);
+            v.tagsShow = tagSet;
+
+
+            // panzoom
+            const panzoomInstance = panzoom($('#panzoom-anchor')[0], {
+                maxZoom: 3.0,
+                minZoom: 0.1,
+                bounds: false,
+                boundsPadding: 0.2,
+                beforeMouseDown: function (e) {
+                    let valid = !e.shiftKey;
+                    return !valid;
+                },
+            });
+
+            setTimeout(() => {
+                panzoomInstance.zoomTo(0, 0, 0.3);
+            }, 1);
+            panzoomInstance.on('zoom', function (e) {
+                v.zoom = panzoomInstance.getTransform().scale;
+            });
+
+
+            window.panzoomInstance = panzoomInstance;
+            window.v = v;
+
+        });
+    </script>
+
+    <script src="inject.js"></script>
+
+</body>
+
+
+</html>

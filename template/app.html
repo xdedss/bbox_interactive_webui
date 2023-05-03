@@ -458,6 +458,7 @@
             let v = Vue.createApp(appConfig).mount('#app');
 
             // find all tags
+            let rebuildTags = function() {
             let tagSet = new Set();
             for (let image of v.imageList) {
                 console.log(image)
@@ -470,6 +471,9 @@
             console.log(tagSet);
             v.allTags = Array.from(tagSet);
             v.tagsShow = tagSet;
+            };
+            rebuildTags();
+            window.rebuildTags = rebuildTags;
 
 
             // panzoom

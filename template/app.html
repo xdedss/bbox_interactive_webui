@@ -46,6 +46,7 @@
 
         .left-sidebar {
             flex: 0 0 200px;
+            max-width: 220px;
             padding: 0px;
             background-color: #fff;
         }
@@ -171,8 +172,8 @@
                 <li class="divider" data-content="IMAGES"></li>
                 <div style="overflow-y:auto; flex:1">
                     <li class="menu-item" v-for="(image, imageIndex) in imageList">
-                        <a :class="{active: i==imageIndex}" href="#" @click="i=imageIndex; showBoxIndex=-1">{{
-                            image.file }}</a>
+                        <a :class="{active: i==imageIndex}" href="#" @click="i=imageIndex; showBoxIndex=-1" :title="image.name">
+                            {{ image.name }}</a>
                     </li>
                 </div>
             </ul>
@@ -244,6 +245,7 @@
                         imageList: [
                             {
                                 file: '1.jpg',
+                                name: 'www',
                                 bbox: [
                                     {
                                         classId: 0,
@@ -276,6 +278,7 @@
                             },
                             {
                                 file: '1.jpg',
+                                name: 'www2',
                                 bbox: [
                                     {
                                         classId: 0,
@@ -299,61 +302,73 @@
                             },
                             {
                                 file: '2.jpg',
+                                name: 'www3',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '31.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '41.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'sdafsdf asdfasdf sss dfdfdfdfdf ewerwe???',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'asdfasdfasdsadfasdfasdfasdfas',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'wsadfasdfasdfasdfsadfasdfasdfasdfasdfasdf4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },
                             {
                                 file: '15.jpg',
+                                name: 'w4ww',
                                 bbox: [
                                 ],
                             },

@@ -154,6 +154,14 @@
         <!-- LEFT -->
         <div class="left-sidebar">
             <ul class="menu">
+                <h6>Class visibility:</h6>
+                <div class="tags-holder">
+                    <span v-for="(className, classId) in classes" class="chip clickable"
+                        @click="classVisible[classId] = !classVisible[classId]"
+                        style="color:#000; border-style: solid;"
+                        :style="{'background-color': classVisible[classId] ? rgb2hex(classColors[classId], 0.5) : null, 'border-color': rgb2hex(classColors[classId], 1.0), 'border-width': classVisible[classId] ? '2px':'0px'}">{{ className }}</span>
+                </div>
+                <div class="divider"></div>
                 <h6>Show if has tags:</h6>
                 <div class="btn-group">
                     <button class="btn btn-sm" :class="{active: tagsShowMode==0}" @click="tagsShowMode=0">Any</button>
@@ -191,10 +199,10 @@
                 <img id="bgimage" :src="imageList[i].file" @pointerover="selectedBoxIndex = -1" @pointerdown="showBoxIndex=-1"
                 :style="{transform: 'scale(' + imgScale + ')'}">
                 <template v-for="(bbox, boxIndex) in imageList[i].bbox">
-                    <div v-if="tagVisible(bbox.tags)" class="bbox"
+                    <div v-if="tagVisible(bbox.tags) && classVisible[bbox.classId]" class="bbox"
                         :style="{'border-color' : rgb2hex(classColors[bbox.classId],showBoxIndex==boxIndex?1.0:0.7), 'border-style': (selectedBoxIndex == boxIndex || showBoxIndex == boxIndex  ) ? 'solid' : null, left:imgScale*bbox.x1+'px', top:imgScale*bbox.y1+'px', width:imgScale*(bbox.x2-bbox.x1)+'px', height:imgScale*(bbox.y2-bbox.y1)+'px', 'font-size':bboxSize}">
                         <div :style="{'background-color': rgb2hex(classColors[bbox.classId], showBoxIndex==boxIndex?1.0:0.7)}"
-                            style="display: inline-block;" @pointerover="selectedBoxIndex = boxIndex"
+                            style="display: inline-block; color: #000;" @pointerover="selectedBoxIndex = boxIndex"
                             @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex">
                             {{ bbox.classId }} {{ classes[bbox.classId] }}
                         </div>
@@ -245,7 +253,7 @@
                         selectedBoxIndex: -1, // bbox index
                         showBoxIndex: -1, // bbox index
                         zoom: 1,
-                        imgScale: 3,
+                        imgScale: 4,
                         allTags: [],
                         tagsShowMode: 0, // 0 any 1 all
                         tagsShow: new Set(),
@@ -392,11 +400,12 @@
                             [255, 180, 0],
                             [0, 255, 0],
                         ],
+                        classVisible: [true, true, true],
                     };
                 },
                 computed: {
                     bboxSize() {
-                        return (10 / this.zoom) + 'px';
+                        return (12 / this.zoom) + 'px';
                     },
                 },
                 methods: {
@@ -470,16 +479,17 @@
             let rebuildTags = function() {
                 let tagSet = new Set();
                 for (let image of v.imageList) {
-                    console.log(image)
                     for (let bbox of image.bbox) {
                         for (let tag of bbox.tags) {
                             tagSet.add(tag);
                         }
                     }
                 }
-                console.log(tagSet);
                 v.allTags = Array.from(tagSet);
                 v.tagsShow = tagSet;
+                let trues = [];
+                for (let i=0; i < v.classes.length; i++) trues.push(true);
+                v.classVisible = trues;
             };
             rebuildTags();
             window.rebuildTags = rebuildTags;

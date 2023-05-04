@@ -30,11 +30,35 @@
             flex-direction: column;
         }
 
-        header,
-        footer {
+        header {
             flex: 0 0 auto;
             background-color: #333;
             color: #fff;
+            padding: 10px;
+        }
+
+        footer {
+            flex: 0 0 auto;
+            background-color: #0071cc;
+            color: #fff;
+            height: 4em;
+            padding: 0;
+            font-size: 0.4em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        footer .mark {
+            margin-left: 1em;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding-left: 1em;
+            padding-right: 1em;
+        }
+        footer .mark:hover {
+            background-color: rgba(255, 255, 255, 0.2);
         }
 
         .content-wrapper {
@@ -67,12 +91,6 @@
             flex: 1;
             overflow: hidden;
             background-color: #eee;
-        }
-
-        header,
-        footer {
-            /* border: 1px solid black; */
-            padding: 10px;
         }
 
         #panzoom-anchor {
@@ -143,14 +161,14 @@
     </style>
 </head>
 
-<body>
+<body id="app">
 
     <header class="navbar">
         <section class="navbar-section">
-            <h3>BBox Viewer</h3>
+            <h3 style="margin-bottom: 0px;">BBox Viewer</h3>
         </section>
     </header>
-    <div class="content-wrapper" id="app">
+    <div class="content-wrapper">
         <!-- LEFT -->
         <div class="left-sidebar">
             <ul class="menu">
@@ -194,7 +212,7 @@
 
         </div>
         <!-- CENTER -->
-        <div class="center-content">
+        <div class="center-content" @pointermove="centerSectionPointerMove">
             <div id="panzoom-anchor">
                 <img id="bgimage" :src="imageList[i].file" @pointerover="selectedBoxIndex = -1" @pointerdown="showBoxIndex=-1"
                 :style="{transform: 'scale(' + imgScale + ')'}">
@@ -236,7 +254,10 @@
             </div>
         </div>
     </div>
-    <footer>biubiu</footer>
+    <footer>
+        <div class="mark"> scale {{ (zoom * imgScale).toFixed(2) }} </div>
+        <div class="mark"> mouse {{ mouseX.toFixed(1) }} x {{ mouseY.toFixed(1) }} </div>
+    </footer>
 
     <script>
 
@@ -259,6 +280,8 @@
                         tagsShow: new Set(),
                         tagsHideMode: 0, // 0 any 1 all
                         tagsHide: new Set(),
+                        mouseX: 0,
+                        mouseY: 0,
                         imageList: [
                             {
                                 file: '1.jpg',
@@ -417,13 +440,13 @@
                     tagVisible(tags) {
                         // hide first
                         if (this.tagsHideMode == 0) {
-                            // any
+                            // any (intersection is not empty)
                             for (let tagHide of this.tagsHide) {
                                 if (tags.indexOf(tagHide) != -1) return false;
                             }
                         }
                         else {
-                            // all
+                            // all (tagsHide \in tags)
                             let allFlag = true;
                             for (let tagHide of this.tagsHide) {
                                 if (tags.indexOf(tagHide) == -1) {
@@ -468,7 +491,16 @@
                         else {
                             this.tagsShow.add(tag);
                         }
-                    }
+                    },
+                    centerSectionPointerMove(e) {
+                        const imgxy = $('#bgimage').offset();
+                        const ptx = e.pageX - imgxy.left;
+                        const pty = e.pageY - imgxy.top;
+                        const imgx = ptx / this.zoom / this.imgScale;
+                        const imgy = pty / this.zoom / this.imgScale;
+                        this.mouseX = imgx;
+                        this.mouseY = imgy;
+                    },
                 },
 
             };

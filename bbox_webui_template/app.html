@@ -57,6 +57,7 @@
             padding-left: 1em;
             padding-right: 1em;
         }
+
         footer .mark:hover {
             background-color: rgba(255, 255, 255, 0.2);
         }
@@ -175,9 +176,9 @@
                 <h6>Class visibility:</h6>
                 <div class="tags-holder">
                     <span v-for="(className, classId) in classes" class="chip clickable"
-                        @click="classVisible[classId] = !classVisible[classId]"
-                        style="color:#000; border-style: solid;"
-                        :style="{'background-color': classVisible[classId] ? rgb2hex(classColors[classId], 0.5) : null, 'border-color': rgb2hex(classColors[classId], 1.0), 'border-width': classVisible[classId] ? '2px':'0px'}">{{ className }}</span>
+                        @click="classVisible[classId] = !classVisible[classId]" style="color:#000; border-style: solid;"
+                        :style="classChipDynamicStyle(classId)">{{
+                        className }}</span>
                 </div>
                 <div class="divider"></div>
                 <h6>Show if has tags:</h6>
@@ -203,8 +204,8 @@
                 <li class="divider" data-content="IMAGES"></li>
                 <div style="overflow-y:auto; flex:1">
                     <li class="menu-item" v-for="(image, imageIndex) in imageList">
-                        <a :class="{active: i==imageIndex}" href="#" @pointerdown   ="i=imageIndex; showBoxIndex=-1" :title="image.name"
-                        style="-webkit-user-drag: none;">
+                        <a :class="{active: i==imageIndex}" href="#" @pointerdown="i=imageIndex; showBoxIndex=-1"
+                            :title="image.name" style="-webkit-user-drag: none;">
                             {{ image.name }}</a>
                     </li>
                 </div>
@@ -214,11 +215,10 @@
         <!-- CENTER -->
         <div class="center-content" @pointermove="centerSectionPointerMove">
             <div id="panzoom-anchor">
-                <img id="bgimage" :src="imageList[i].file" @pointerover="selectedBoxIndex = -1" @pointerdown="showBoxIndex=-1"
-                :style="{transform: 'scale(' + imgScale + ')'}">
+                <img id="bgimage" :src="imageList[i].file" @pointerover="selectedBoxIndex = -1"
+                    @pointerdown="showBoxIndex=-1" :style="{transform: 'scale(' + imgScale + ')'}">
                 <template v-for="(bbox, boxIndex) in imageList[i].bbox">
-                    <div v-if="tagVisible(bbox.tags) && classVisible[bbox.classId]" class="bbox"
-                        :style="{'border-color' : rgb2hex(classColors[bbox.classId],showBoxIndex==boxIndex?1.0:0.7), 'border-style': (selectedBoxIndex == boxIndex || showBoxIndex == boxIndex  ) ? 'solid' : null, left:imgScale*bbox.x1+'px', top:imgScale*bbox.y1+'px', width:imgScale*(bbox.x2-bbox.x1)+'px', height:imgScale*(bbox.y2-bbox.y1)+'px', 'font-size':bboxSize}">
+                    <div v-if="tagVisible(bbox.tags) && classVisible[bbox.classId]" class="bbox" :style="bboxDynamicStyle(bbox, boxIndex)">
                         <div :style="{'background-color': rgb2hex(classColors[bbox.classId], showBoxIndex==boxIndex?1.0:0.7)}"
                             style="display: inline-block; color: #000;" @pointerover="selectedBoxIndex = boxIndex"
                             @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex">
@@ -239,8 +239,10 @@
                     <div class="divider"></div>
                     <span>TLxy: </span><span>{{ bbox.x1.toFixed(1) }}, {{ bbox.y1.toFixed(1) }}</span><br>
                     <span>BRxy: </span><span>{{ bbox.x2.toFixed(1) }}, {{ bbox.y2.toFixed(1) }}</span><br>
-                    <span>Center: </span><span>{{ ((bbox.x2+bbox.x1)/2).toFixed(1) }}, {{ ((bbox.y2+bbox.x1)/2).toFixed(1) }}</span><br>
-                    <span>WH: </span><span>{{ ((bbox.x2-bbox.x1)).toFixed(1) }}, {{ ((bbox.y2-bbox.x1)).toFixed(1) }}</span>
+                    <span>Center: </span><span>{{ ((bbox.x2+bbox.x1)/2).toFixed(1) }}, {{
+                        ((bbox.y2+bbox.x1)/2).toFixed(1) }}</span><br>
+                    <span>WH: </span><span>{{ ((bbox.x2-bbox.x1)).toFixed(1) }}, {{ ((bbox.y2-bbox.x1)).toFixed(1)
+                        }}</span>
                     <div class="divider"></div>
                     <span>Tags:</span>
                     <span v-for="tag in imageList[i].bbox[showBoxIndex].tags" class="chip">{{ tag }}</span>
@@ -492,6 +494,24 @@
                             this.tagsShow.add(tag);
                         }
                     },
+                    bboxDynamicStyle(bbox, boxIndex) {
+                        return { 
+                            'border-color': this.rgb2hex(this.classColors[bbox.classId], this.showBoxIndex == boxIndex ? 1.0 : 0.7), 
+                            'border-style': (this.selectedBoxIndex == boxIndex || this.showBoxIndex == boxIndex) ? 'solid' : null, 
+                            left: this.imgScale * bbox.x1 + 'px', 
+                            top: this.imgScale * bbox.y1 + 'px', 
+                            width: this.imgScale * (bbox.x2 - bbox.x1) + 'px', 
+                            height: this.imgScale * (bbox.y2 - bbox.y1) + 'px', 
+                            'font-size': this.bboxSize
+                        };
+                    },
+                    classChipDynamicStyle(classId) {
+                        return {
+                            'background-color': this.classVisible[classId] ? this.rgb2hex(this.classColors[classId], 0.5) : null, 
+                            'border-color': this.rgb2hex(this.classColors[classId], 1.0), 
+                            'border-width': this.classVisible[classId] ? '2px':'0px'
+                        };
+                    },
                     centerSectionPointerMove(e) {
                         const imgxy = $('#bgimage').offset();
                         const ptx = e.pageX - imgxy.left;
@@ -508,7 +528,7 @@
             let v = Vue.createApp(appConfig).mount('#app');
 
             // find all tags
-            let rebuildTags = function() {
+            let rebuildTags = function () {
                 let tagSet = new Set();
                 for (let image of v.imageList) {
                     for (let bbox of image.bbox) {
@@ -520,7 +540,7 @@
                 v.allTags = Array.from(tagSet);
                 v.tagsShow = tagSet;
                 let trues = [];
-                for (let i=0; i < v.classes.length; i++) trues.push(true);
+                for (let i = 0; i < v.classes.length; i++) trues.push(true);
                 v.classVisible = trues;
             };
             rebuildTags();

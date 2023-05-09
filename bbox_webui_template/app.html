@@ -173,12 +173,15 @@
         <!-- LEFT -->
         <div class="left-sidebar">
             <ul class="menu">
-                <h6>Class visibility:</h6>
+                <h6>Class visibility (Thr={{ scoreBarVal }}):</h6>
                 <div class="tags-holder">
                     <span v-for="(className, classId) in classes" class="chip clickable"
                         @click="classVisible[classId] = !classVisible[classId]" style="color:#000; border-style: solid;"
                         :style="classChipDynamicStyle(classId)">{{
                         className }}</span>
+                </div>
+                <div class="bar bar-slider">
+                    <input type="range" min="0" max="100" value="20" v-model="scoreBarVal" style="width:100%">
                 </div>
                 <div class="divider"></div>
                 <h6>Show if has tags:</h6>
@@ -218,7 +221,7 @@
                 <img id="bgimage" :src="imageList[i].file" @pointerover="selectedBoxIndex = -1"
                     @pointerdown="showBoxIndex=-1" :style="{transform: 'scale(' + imgScale + ')'}">
                 <template v-for="(bbox, boxIndex) in imageList[i].bbox">
-                    <div v-if="tagVisible(bbox.tags) && classVisible[bbox.classId]" class="bbox" :style="bboxDynamicStyle(bbox, boxIndex)">
+                    <div v-if="tagVisible(bbox.tags) && classVisible[bbox.classId] && bbox.score >= scoreBarVal*0.01" class="bbox" :style="bboxDynamicStyle(bbox, boxIndex)">
                         <div :style="{'background-color': rgb2hex(classColors[bbox.classId], showBoxIndex==boxIndex?1.0:0.7)}"
                             style="display: inline-block; color: #000;" @pointerover="selectedBoxIndex = boxIndex"
                             @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex">
@@ -284,6 +287,7 @@
                         tagsHide: new Set(),
                         mouseX: 0,
                         mouseY: 0,
+                        scoreBarVal: 50,
                         imageList: [
                             {
                                 file: '1.jpg',
@@ -291,6 +295,7 @@
                                 bbox: [
                                     {
                                         classId: 0,
+                                        score: 0.2,
                                         tags: ['a', 'b', 'asdfasfdasf', 'sdsddddddd'],
                                         x1: 1100,
                                         y1: 300,
@@ -300,6 +305,7 @@
                                     },
                                     {
                                         classId: 2,
+                                        score: 0.8,
                                         tags: ['a', 'c'],
                                         x1: 210,
                                         y1: 120,
@@ -309,6 +315,7 @@
                                     },
                                     {
                                         classId: 1,
+                                        score: 0.5,
                                         tags: ['wwww', '2333'],
                                         x1: 1000,
                                         y1: 0,

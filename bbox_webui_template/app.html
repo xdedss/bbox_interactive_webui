@@ -225,7 +225,7 @@
                         <div :style="{'background-color': rgb2hex(classColors[bbox.classId], showBoxIndex==boxIndex?1.0:0.7)}"
                             style="display: inline-block; color: #000;" @pointerover="selectedBoxIndex = boxIndex"
                             @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex">
-                            {{ bbox.classId }} {{ classes[bbox.classId] }}
+                            {{ bbox.classId }} {{ classes[bbox.classId] }} {{ (bbox.score * 100).toFixed(1) }}
                         </div>
                         <div class="border-click" @pointerover="selectedBoxIndex = boxIndex"
                             @pointerleave="selectedBoxIndex = -1" @pointerdown="showBoxIndex = boxIndex"></div>

@@ -25,6 +25,7 @@ class ImageData():
             top_left_xy: tuple[float, float], 
             bottom_right_xy: tuple[float, float], 
             class_id: int, 
+            score: float=0.5,
             tags: Sequence[str]=[], 
             info: str='no additional info'):
         x1, y1 = top_left_xy
@@ -38,6 +39,7 @@ class ImageData():
             'x2': x2,
             'y2': y2,
             'info': info,
+            'score': score,
         })
 
         
@@ -140,7 +142,7 @@ def test():
             cx, cy = np.random.uniform(0, img.shape[1]), np.random.uniform(0, img.shape[0])
             w, h = np.exp(np.random.uniform(np.log(5), np.log(200))), np.exp(np.random.uniform(np.log(5), np.log(200)))
             # add
-            img_data.add_bbox((cx - w/2, cy - h/2), (cx + w/2, cy + h/2), random.randint(0, len(classes) - 1), random.sample(tags, 2))
+            img_data.add_bbox((cx - w/2, cy - h/2), (cx + w/2, cy + h/2), random.randint(0, len(classes) - 1), tags=random.sample(tags, 2), score=random.uniform(0.1, 0.9))
             
             cv2.ellipse(img, (int(cx), int(cy)), (int(w/2), int(h/2)), 0, 0, 360, color=np.random.randint(0, 255, 3).tolist(), thickness=-1)
         data.append(img_data)

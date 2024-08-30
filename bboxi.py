@@ -5,7 +5,7 @@ import cv2
 import os, time, shutil, json, random, threading
 import http.server, socketserver
 
-from typing import Sequence
+from typing import Sequence, Tuple
 
 TEMPLATE_DIR = 'bbox_webui_template'
 
@@ -22,8 +22,8 @@ class ImageData():
 
     def add_bbox(
             self, 
-            top_left_xy: tuple[float, float], 
-            bottom_right_xy: tuple[float, float], 
+            top_left_xy: Tuple[float, float], 
+            bottom_right_xy: Tuple[float, float], 
             class_id: int, 
             score: float=0.5,
             tags: Sequence[str]=[], 
